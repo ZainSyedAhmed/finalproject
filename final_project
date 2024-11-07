@@ -1,0 +1,55 @@
+import pandas as pd
+
+car_file_path = '/content/cars.csv'
+car_data = pd.read_csv(car_file_path)
+car_data.columns
+
+car_data = car_data.dropna(axis=0)
+
+y = car_data.cylinder
+
+car_features = ['price', 'seats', 'horse_power', 'country', 'top_speed']
+
+X = car_data[car_features]
+
+X.describe()
+
+X.head()
+
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
+car_features = ['price', 'seats', 'horse_power', 'country', 'top_speed']
+X = car_data[car_features]
+
+for column in X.select_dtypes(include=['object']).columns:
+    X[column] = pd.to_numeric(X[column], errors='coerce')
+
+for column in X.select_dtypes(include=['number']).columns:
+    X[column] = X[column].fillna(X[column].mean())
+
+categorical_features = ['country']
+numerical_features = ['price', 'seats', 'horse_power', 'top_speed']
+
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', 'passthrough', numerical_features),
+        ('cat', OneHotEncoder(sparse_output=False, handle_unknown='ignore'), categorical_features)],
+    remainder='drop'  
+)
+
+# Apply the preprocessing to your data
+X_encoded = preprocessor.fit_transform(X)
+
+target_encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore') 
+
+# 2. Fit and transform the target variable 'y'
+y_encoded = target_encoder.fit_transform(y.values.reshape(-1, 1)) 
+
+car_model = DecisionTreeRegressor(random_state=1)
+car_model.fit(X_encoded, y_encoded) 
+
+print("Making predictions for the following 5 qualities are:")
+print(X.head())
+print("The predictions are")
+print(car_model.predict(X.head()))
